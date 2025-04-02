@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
 
 struct {
   struct spinlock lock;
@@ -141,6 +142,10 @@ userinit(void)
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
+  
+  //##TICKS TICKETS
+  p->ticks = 0;
+  p->tickets = 10;
 
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
@@ -211,6 +216,10 @@ fork(void)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
   pid = np->pid;
+ 
+  //##TICKS AND TICKETS
+  np->ticks = 0;
+  np->tickets = curproc->tickets;
 
   acquire(&ptable.lock);
 
