@@ -21,6 +21,13 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+#define RAND_MAX ((1U << 31) - 1)
+static int rseed = 1898888749;
+int random()
+{
+  return rseed = (rseed * 1203515243 + 12345) & RAND_MAX;
+}
+
 void
 pinit(void)
 {
@@ -219,7 +226,12 @@ fork(void)
  
   //##TICKS AND TICKETS
   np->ticks = 0;
-  np->tickets = curproc->tickets;
+  if (curproc->tickets > 10) {
+    np->tickets = curproc->tickets;
+  }
+  else {
+    np->tickets = 10;
+  }
 
   acquire(&ptable.lock);
 
@@ -335,6 +347,9 @@ scheduler(void)
   struct cpu *c = mycpu();
   c->proc = 0;
   
+ // struct pstatTable pst;
+ // getpinfo(&pst);
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -540,4 +555,40 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+void 
+fillpstat(pstatTable * pst) {
+  int i = 0;
+  struct proc *p;
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(p->state == UNUSED) {
+      continue;
+    }
+    if(p->state == EMBRYO) {
+      (*pst)[i].state = 'E';
+    }
+    if(p->state == SLEEPING) {
+      (*pst)[i].state = 'S';
+    }
+    if(p->state == RUNNABLE) {
+      (*pst)[i].state = 'A';
+    }
+    if(p->state == RUNNING) {
+      (*pst)[i].state = 'R';
+    }
+    if(p->state == ZOMBIE) {
+      (*pst)[i].state = 'Z';
+    }   
+
+    (*pst)[i].tickets = p->tickets;
+    (*pst)[i].pid = p->pid;
+    (*pst)[i].ticks = p->ticks;
+    int j = 0;
+    for (j = 0; j < 16; j++) {
+      (*pst)[i].name[j] = p->name[j];
+    }
+  }
+  release(&ptable.lock);
 }

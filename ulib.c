@@ -3,6 +3,19 @@
 #include "fcntl.h"
 #include "user.h"
 #include "x86.h"
+#include "pstat.h"
+#include "param.h"
+
+void
+ps() {
+  pstatTable pst;
+  getpinfo(&pst);
+  printf(1, "PID\tTKTS\tTCKS\tSTAT\tNAME\n");
+  int i = 0;
+  for (i = 0; i < NPROC; i++) {
+    printf(1, "%d\t%d\t%d\t%c\t%s\n", pst[i].pid, pst[i].tickets, pst[i].ticks, pst[i].state, pst[i].name);
+  }
+}
 
 char*
 strcpy(char *s, const char *t)
